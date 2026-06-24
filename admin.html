@@ -191,9 +191,9 @@ async function loadData(){
 function renderTable(){
   const t = CONFIG.traits;
   $('count').textContent = '（共 ' + LIST.length + ' 筆）';
-  let head = '<tr><th>#</th><th>時間</th><th>測驗時長</th><th>姓名</th><th>Email</th><th>總判定</th>';
+  let head = '<tr><th>#</th><th>時間</th><th>測驗時長</th><th>姓名</th><th>Email</th><th>總判定</th><th>答題正確數</th>';
   TRAIT_ORDER.forEach(k=> head += '<th>'+t[k].label+'</th>');
-  head += '<th>答題正確數</th><th>答錯題（點看明細）</th></tr>';
+  head += '<th>答錯題（點看明細）</th></tr>';
   let body = '';
   if(!LIST.length){
     body = '<tr><td colspan="13" style="padding:24px;color:var(--sub)">尚無資料</td></tr>';
@@ -206,14 +206,14 @@ function renderTable(){
             '<td>'+esc(fmtDur(row.durationSec))+'</td>'+
             '<td class="name">'+esc(row.name)+'</td><td>'+esc(row.email)+'</td>'+
             '<td class="'+vc+'">'+esc(r.verdict)+'</td>';
-    TRAIT_ORDER.forEach(k=>{
-      const d = r.detail[k]; const c = d.pass?'v-ok':'v-bad';
-      body += '<td class="'+c+'">'+d.got+'/'+d.max+'</td>';
-    });
     const allDetail = qDetailRow(row.answers);
     const correct = allDetail.filter(d=>d.ok).length;
     const total = allDetail.length;
     body += '<td><b>'+correct+'/'+total+'</b></td>';
+    TRAIT_ORDER.forEach(k=>{
+      const d = r.detail[k]; const c = d.pass?'v-ok':'v-bad';
+      body += '<td class="'+c+'">'+d.got+'/'+d.max+'</td>';
+    });
     const wrong = allDetail.filter(d=>!d.ok);
     if(!wrong.length) body += '<td><span class="lnk allok">全對</span></td>';
     else body += '<td><button class="lnk" onclick="openDetail('+realIdx+')">'+wrong.map(d=>'Q'+d.n).join('、')+'</button></td>';

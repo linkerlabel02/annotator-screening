@@ -576,6 +576,8 @@ function sendToGas(r){
     annotatorEmail: $('in-email').value.trim(),
     recipientEmail: CONFIG.recipientEmail,
     verdict: r.verdict,
+    correctCount: QUESTIONS.filter(q => q.trait==='consistency' ? answers[q.id]===answers[q.consistencyWith] : answers[q.id]===q.answer).length,
+    totalCount: QUESTIONS.length,
     durationSec: quizDurationSec,
     traits: r.detail,
     answers: answers,
