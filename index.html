@@ -215,8 +215,8 @@ const CONFIG = {
 
   // 各項特質的「及格門檻」＝至少要答對幾題（max 是該項總題數）
   traits: {
-    logic:       { label:'邏輯判斷', desc:'看得懂畫面、做出符合常理的判斷', max:4, pass:3 },
-    detail:      { label:'細心觀察', desc:'能注意到畫面中的細節',           max:9, pass:7 },
+    logic:       { label:'邏輯判斷', desc:'看得懂畫面、做出符合常理的判斷', max:5, pass:4 },
+    detail:      { label:'細心觀察', desc:'能注意到畫面中的細節',           max:15, pass:12 },
     rule:        { label:'遵循規則', desc:'依指定規則判斷，而非憑直覺',     max:1, pass:1 },
     diligence:   { label:'認真讀題', desc:'會仔細閱讀題目要求',             max:2, pass:2 },
     consistency: { label:'作答一致性', desc:'同一畫面前後判斷一致，非亂猜', max:2, pass:2 },
@@ -288,6 +288,20 @@ const QUESTIONS = [
     q:'畫面中是否有垃圾？（若畫面中沒有垃圾，請選 NA）', options:['是','否','NA'], answer:'是' },
   { id:'q18', trait:'consistency', img:'screening_imgs/accident_yes.jpg',
     q:'仔細看整個畫面，有沒有發生交通事故（車禍）？', options:['有','沒有'], answer:'有', consistencyWith:'q10' },
+  { id:'q20', trait:'detail', img:'screening_imgs/裂縫O.jpg',
+    q:'道路上是否有裂縫？', options:['有','沒有'], answer:'有' },
+  { id:'q21', trait:'detail', img:'screening_imgs/補丁X.jpg',
+    q:'道路上是否有裂縫？', options:['有','沒有'], answer:'沒有' },
+  { id:'q22', trait:'detail', img:'screening_imgs/標誌O.jpg',
+    q:'畫面中道路標誌是否異常？（模糊、退色、破損都算異常）', options:['是','否'], answer:'是' },
+  { id:'q23', trait:'detail', img:'screening_imgs/坑洞X.jpg',
+    q:'道路上是否有坑洞？', options:['有','沒有'], answer:'沒有' },
+  { id:'q24', trait:'detail', img:'screening_imgs/車格模糊O.jpg',
+    q:'畫面中停車格是否模糊？', options:['是','否'], answer:'是' },
+  { id:'q25', trait:'detail', img:'screening_imgs/車站垃圾X.jpg',
+    q:'畫面中公車停靠站是否有垃圾？', options:['有','沒有'], answer:'沒有' },
+  { id:'q26', trait:'logic', img:'screening_imgs/交通雍塞O.jpg',
+    q:'畫面中是否交通壅塞？', options:['是','否'], answer:'是' },
 ];
 
 /* =================================================================
