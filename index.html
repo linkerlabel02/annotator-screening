@@ -432,7 +432,7 @@ function fmtDur(s){ if(s==null||s==='') return ''; s=+s; const m=Math.floor(s/60
 function saveResult(r){
   const list = getResults();
   list.push({
-    timestamp: new Date().toLocaleString('zh-TW'),
+    timestamp: new Date().toLocaleString('zh-TW', {year:'numeric',month:'numeric',day:'numeric',hour:'numeric',minute:'2-digit',second:'2-digit',hour12:true}),
     name: $('in-name').value.trim(),
     email: $('in-email').value.trim(),
     durationSec: quizDurationSec,
@@ -571,7 +571,7 @@ function renderResult(r){
 function sendToGas(r){
   if(!CONFIG.gasUrl) return;
   const payload = {
-    timestamp: new Date().toLocaleString('zh-TW'),
+    timestamp: new Date().toLocaleString('zh-TW', {year:'numeric',month:'numeric',day:'numeric',hour:'numeric',minute:'2-digit',second:'2-digit',hour12:true}),
     annotatorName: $('in-name').value.trim(),
     annotatorEmail: $('in-email').value.trim(),
     recipientEmail: CONFIG.recipientEmail,
