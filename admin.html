@@ -90,7 +90,7 @@ const ADMIN_PASSWORD = 'admin1234';
 const CONFIG = {
   traits: {
     logic:       { label:'邏輯判斷', desc:'看得懂畫面、做出符合常理的判斷', max:5, pass:4 },
-    detail:      { label:'細心觀察', desc:'能注意到畫面中的細節',           max:20, pass:17 },
+    detail:      { label:'細心觀察', desc:'能注意到畫面中的細節',           max:21, pass:19 },
     rule:        { label:'遵循規則', desc:'依指定規則判斷，而非憑直覺',     max:1, pass:1 },
     diligence:   { label:'認真讀題', desc:'會仔細閱讀題目要求',             max:2, pass:2 },
     consistency: { label:'作答一致性', desc:'同一畫面前後判斷一致，非亂猜', max:2, pass:2 },
@@ -130,6 +130,7 @@ const QUESTIONS = [
   { id:'q29', trait:'detail',      q:'畫面中路樹是否異常？', answer:'是' },
   { id:'q30', trait:'detail',      q:'是否有人員沒穿安全背心？（只要有 1 人沒穿就選「是」）', answer:'是' },
   { id:'q31', trait:'detail',      q:'是否有人員沒戴安全帽？（只要有 1 人沒戴就選「是」）', answer:'否' },
+  { id:'q32', trait:'detail',      type:'input', q:'錶頭數值是多少？（請輸入數字）', answer:'126' },
 ];
 const TRAIT_ORDER = ['logic','detail','rule','diligence','consistency'];
 
@@ -140,13 +141,44 @@ function esc(s){ return String(s==null?'':s).replace(/[<>&]/g,c=>({'<':'&lt;','>
 function fmtTime(s){ try{ const d=new Date(s); if(isNaN(d)) return s; return d.toLocaleString('zh-TW',{year:'numeric',month:'numeric',day:'numeric',hour:'numeric',minute:'2-digit',second:'2-digit',hour12:true}); }catch(e){ return s; } }
 function fmtDur(s){ if(s==null||s==='') return ''; s=+s; if(isNaN(s)) return ''; const m=Math.floor(s/60),x=s%60; return m+'分'+(x<10?'0':'')+x+'秒'; }
 
+/* ---- 彈性答案比對（input 數字題：126 / 126.0 / 一百二十六 / 全形 / 含空白 都算對） ---- */
+function zhToNum(s){
+  const dg={零:0,〇:0,一:1,二:2,兩:2,两:2,三:3,四:4,五:5,六:6,七:7,八:8,九:9,壹:1,貳:2,參:3,肆:4,伍:5,陸:6,柒:7,捌:8,玖:9};
+  const un={十:10,拾:10,百:100,佰:100,千:1000,仟:1000};
+  let total=0,sec=0,num=0,found=false;
+  for(const ch of String(s)){
+    if(dg[ch]!=null){ num=dg[ch]; found=true; }
+    else if(un[ch]!=null){ if(num===0)num=1; sec+=num*un[ch]; num=0; found=true; }
+    else if(ch==='萬'||ch==='万'){ total+=(sec+num)*1e4; sec=0;num=0; found=true; }
+    else if(ch==='億'||ch==='亿'){ total+=(sec+num)*1e8; sec=0;num=0; found=true; }
+    else return null;
+  }
+  return found?total+sec+num:null;
+}
+function normNum(v){
+  if(v==null) return null;
+  let s=String(v).replace(/\s+/g,'').replace(/[０-９．]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0));
+  if(s==='') return null;
+  if(/^[+-]?(\d+\.?\d*|\.\d+)$/.test(s)) return parseFloat(s);
+  return zhToNum(s);
+}
+function ansMatch(q,ua){
+  if(ua==null||ua==='') return false;
+  if(q.type==='input'){
+    const a=normNum(q.answer), b=normNum(ua);
+    if(a!=null && b!=null) return a===b;
+    return String(ua).replace(/\s+/g,'')===String(q.answer).replace(/\s+/g,'');
+  }
+  return ua===q.answer;
+}
+
 function scoreRow(ans){
   ans = ans || {};
   const t = CONFIG.traits, got = {}; Object.keys(t).forEach(k=>got[k]=0);
   QUESTIONS.forEach(q=>{
     const a = ans[q.id];
     if(q.trait==='consistency'){ if(a===ans[q.consistencyWith]) got.consistency++; }
-    else if(a===q.answer) got[q.trait]++;
+    else if(ansMatch(q, a)) got[q.trait]++;
   });
   const detail={}; let allPass=true, crit=false;
   Object.keys(t).forEach(k=>{
@@ -166,7 +198,7 @@ function qDetailRow(ans){
   return QUESTIONS.map((q,i)=>{
     let correct,ok;
     if(q.trait==='consistency'){ correct=ans[q.consistencyWith]; ok=(ans[q.id]===correct); }
-    else { correct=q.answer; ok=(ans[q.id]===correct); }
+    else { correct=q.answer; ok=ansMatch(q, ans[q.id]); }
     return {n:i+1, text:q.q, ua:ans[q.id], correct:correct, ok:ok};
   });
 }

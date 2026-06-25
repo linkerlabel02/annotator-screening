@@ -216,7 +216,7 @@ const CONFIG = {
   // 各項特質的「及格門檻」＝至少要答對幾題（max 是該項總題數）
   traits: {
     logic:       { label:'邏輯判斷', desc:'看得懂畫面、做出符合常理的判斷', max:5, pass:4 },
-    detail:      { label:'細心觀察', desc:'能注意到畫面中的細節',           max:20, pass:17 },
+    detail:      { label:'細心觀察', desc:'能注意到畫面中的細節',           max:21, pass:19 },
     rule:        { label:'遵循規則', desc:'依指定規則判斷，而非憑直覺',     max:1, pass:1 },
     diligence:   { label:'認真讀題', desc:'會仔細閱讀題目要求',             max:2, pass:2 },
     consistency: { label:'作答一致性', desc:'同一畫面前後判斷一致，非亂猜', max:2, pass:2 },
@@ -312,6 +312,8 @@ const QUESTIONS = [
     q:'是否有人員沒穿安全背心？（只要有 1 人沒穿就選「是」）', options:['是','否'], answer:'是' },
   { id:'q31', trait:'detail', img:'screening_imgs/安全帽X.jpg',
     q:'是否有人員沒戴安全帽？（只要有 1 人沒戴就選「是」）', options:['是','否'], answer:'否' },
+  { id:'q32', trait:'detail', img:'screening_imgs/LINE_ALBUM_錶頭_250507_11.jpg',
+    type:'input', q:'錶頭數值是多少？（請輸入數字）', answer:'126' },
 ];
 
 /* =================================================================
@@ -360,25 +362,39 @@ function renderQ(){
   // image
   if(q.img){ $('q-img').src = q.img; $('q-imgbox').classList.remove('hide'); }
   else $('q-imgbox').classList.add('hide');
-  // options
+  // options or free input
   const wrap = $('q-opts'); wrap.innerHTML='';
-  q.options.forEach(opt=>{
-    const d = document.createElement('div');
-    d.className='opt'; d.textContent=opt;
-    if(answers[q.id]===opt) d.classList.add('sel');
-    d.onclick=()=>{
-      answers[q.id]=opt;
-      [...wrap.children].forEach(c=>c.classList.remove('sel'));
-      d.classList.add('sel');
-      $('q-next').disabled=false;
+  if(q.type==='input'){
+    const inp = document.createElement('input');
+    inp.type='text'; inp.inputMode='numeric'; inp.autocomplete='off';
+    inp.style.cssText='width:100%;padding:14px 16px;font-size:18px;border:1px solid var(--line);border-radius:12px;box-sizing:border-box';
+    if(answers[q.id]!=null) inp.value=answers[q.id];
+    inp.oninput=()=>{
+      const v=inp.value.trim();
+      if(v===''){ delete answers[q.id]; $('q-next').disabled=true; }
+      else { answers[q.id]=v; $('q-next').disabled=false; }
     };
-    wrap.appendChild(d);
-  });
-  $('q-next').disabled = !answers[q.id];
+    wrap.appendChild(inp);
+    setTimeout(()=>inp.focus(),50);
+  } else {
+    q.options.forEach(opt=>{
+      const d = document.createElement('div');
+      d.className='opt'; d.textContent=opt;
+      if(answers[q.id]===opt) d.classList.add('sel');
+      d.onclick=()=>{
+        answers[q.id]=opt;
+        [...wrap.children].forEach(c=>c.classList.remove('sel'));
+        d.classList.add('sel');
+        $('q-next').disabled=false;
+      };
+      wrap.appendChild(d);
+    });
+  }
+  $('q-next').disabled = (answers[q.id]==null || answers[q.id]==='');
   $('q-next').textContent = qIdx===QUESTIONS.length-1 ? '送出 ✓' : '下一題 →';
 }
 function nextQ(){
-  if(!answers[QUESTIONS[qIdx].id]){ alert('請先選擇一個答案'); return; }
+  if(answers[QUESTIONS[qIdx].id]==null || answers[QUESTIONS[qIdx].id]===''){ alert('請先作答'); return; }
   if(qIdx===QUESTIONS.length-1){ finish(); return; }
   qIdx++; renderQ();
 }
@@ -386,6 +402,37 @@ function nextQ(){
 /* ---- 放大檢視 ---- */
 function openModal(){ $('modal-img').src=$('q-img').src; $('modal').classList.remove('hide'); }
 function closeModal(){ $('modal').classList.add('hide'); }
+
+/* ---- 彈性答案比對（input 數字題：126 / 126.0 / 一百二十六 / 全形 / 含空白 都算對） ---- */
+function zhToNum(s){
+  const dg={零:0,〇:0,一:1,二:2,兩:2,两:2,三:3,四:4,五:5,六:6,七:7,八:8,九:9,壹:1,貳:2,參:3,肆:4,伍:5,陸:6,柒:7,捌:8,玖:9};
+  const un={十:10,拾:10,百:100,佰:100,千:1000,仟:1000};
+  let total=0,sec=0,num=0,found=false;
+  for(const ch of String(s)){
+    if(dg[ch]!=null){ num=dg[ch]; found=true; }
+    else if(un[ch]!=null){ if(num===0)num=1; sec+=num*un[ch]; num=0; found=true; }
+    else if(ch==='萬'||ch==='万'){ total+=(sec+num)*1e4; sec=0;num=0; found=true; }
+    else if(ch==='億'||ch==='亿'){ total+=(sec+num)*1e8; sec=0;num=0; found=true; }
+    else return null;
+  }
+  return found?total+sec+num:null;
+}
+function normNum(v){
+  if(v==null) return null;
+  let s=String(v).replace(/\s+/g,'').replace(/[０-９．]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0));
+  if(s==='') return null;
+  if(/^[+-]?(\d+\.?\d*|\.\d+)$/.test(s)) return parseFloat(s);
+  return zhToNum(s);
+}
+function ansMatch(q,ua){
+  if(ua==null||ua==='') return false;
+  if(q.type==='input'){
+    const a=normNum(q.answer), b=normNum(ua);
+    if(a!=null && b!=null) return a===b;
+    return String(ua).replace(/\s+/g,'')===String(q.answer).replace(/\s+/g,'');
+  }
+  return ua===q.answer;
+}
 
 /* ---- 計分 ---- */
 function scoreIt(){
@@ -395,7 +442,7 @@ function scoreIt(){
     const a = answers[q.id];
     if(q.trait==='consistency'){
       if(a === answers[q.consistencyWith]) got.consistency += 1;   // 與對照題一致即得分
-    } else if(a === q.answer){
+    } else if(ansMatch(q, a)){
       got[q.trait] += 1;
     }
   });
@@ -537,7 +584,7 @@ function qDetail(row){
   return QUESTIONS.map((q,i)=>{
     let correct, ok;
     if(q.trait === 'consistency'){ correct = a[q.consistencyWith]; ok = (a[q.id] === correct); }
-    else { correct = q.answer; ok = (a[q.id] === correct); }
+    else { correct = q.answer; ok = ansMatch(q, a[q.id]); }
     return { n:i+1, text:q.q, ua:a[q.id], correct:correct, ok:ok };
   });
 }
@@ -586,7 +633,7 @@ function sendToGas(r){
     annotatorEmail: $('in-email').value.trim(),
     recipientEmail: CONFIG.recipientEmail,
     verdict: r.verdict,
-    correctCount: QUESTIONS.filter(q => q.trait==='consistency' ? answers[q.id]===answers[q.consistencyWith] : answers[q.id]===q.answer).length,
+    correctCount: QUESTIONS.filter(q => q.trait==='consistency' ? answers[q.id]===answers[q.consistencyWith] : ansMatch(q, answers[q.id])).length,
     totalCount: QUESTIONS.length,
     durationSec: quizDurationSec,
     traits: r.detail,
