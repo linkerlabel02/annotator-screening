@@ -222,6 +222,9 @@ const CONFIG = {
     consistency: { label:'作答一致性', desc:'同一畫面前後判斷一致，非亂猜', max:2, pass:2 },
   },
 
+  // 測驗時間上限（秒）：超過直接「不建議錄取」，不論答對幾題（600 秒＝10 分鐘）
+  maxDurationSec: 600,
+
   // 「關鍵項目」：只要這幾項沒過，直接判定「不建議」
   // （邏輯判斷或認真讀題沒過，代表不適任或亂答）
   criticalTraits: ['logic', 'diligence'],
@@ -456,7 +459,9 @@ function scoreIt(){
     if(!pass && CONFIG.criticalTraits.includes(k)) criticalFail=true;
   });
   let verdict, vClass;
-  if(criticalFail){ verdict='不建議錄取'; vClass='bad'; }
+  const overTime = CONFIG.maxDurationSec && quizDurationSec > CONFIG.maxDurationSec;
+  if(overTime){ verdict='不建議錄取'; vClass='bad'; }
+  else if(criticalFail){ verdict='不建議錄取'; vClass='bad'; }
   else if(allPass){ verdict='建議錄取'; vClass='ok'; }
   else { verdict='需再評估'; vClass='warn'; }
   return { detail, verdict, vClass, got };

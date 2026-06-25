@@ -95,6 +95,7 @@ const CONFIG = {
     diligence:   { label:'認真讀題', desc:'會仔細閱讀題目要求',             max:2, pass:2 },
     consistency: { label:'作答一致性', desc:'同一畫面前後判斷一致，非亂猜', max:2, pass:2 },
   },
+  maxDurationSec: 600,   // 測驗時間上限（秒）：超過直接「不建議錄取」，不論答對幾題
   criticalTraits: ['logic','diligence'],
 };
 
@@ -172,7 +173,7 @@ function ansMatch(q,ua){
   return ua===q.answer;
 }
 
-function scoreRow(ans){
+function scoreRow(ans, durationSec){
   ans = ans || {};
   const t = CONFIG.traits, got = {}; Object.keys(t).forEach(k=>got[k]=0);
   QUESTIONS.forEach(q=>{
@@ -188,7 +189,9 @@ function scoreRow(ans){
     if(!pass && CONFIG.criticalTraits.includes(k)) crit=true;
   });
   let verdict,vClass;
-  if(crit){verdict='不建議錄取';vClass='bad';}
+  const overTime = CONFIG.maxDurationSec && durationSec!=null && durationSec!=='' && +durationSec > CONFIG.maxDurationSec;
+  if(overTime){verdict='不建議錄取';vClass='bad';}
+  else if(crit){verdict='不建議錄取';vClass='bad';}
   else if(allPass){verdict='建議錄取';vClass='ok';}
   else {verdict='需再評估';vClass='warn';}
   return {detail,verdict,vClass};
@@ -237,7 +240,7 @@ function renderTable(){
   }
   LIST.slice().reverse().forEach((row,i)=>{
     const realIdx = LIST.length-1-i;
-    const r = scoreRow(row.answers);
+    const r = scoreRow(row.answers, row.durationSec);
     const vc = {ok:'v-ok',warn:'v-warn',bad:'v-bad'}[r.vClass]||'';
     body += '<tr><td>'+(LIST.length-i)+'</td><td>'+esc(fmtTime(row.timestamp))+'</td>'+
             '<td>'+esc(fmtDur(row.durationSec))+'</td>'+
@@ -282,7 +285,7 @@ function exportCSV(){
   cols.push('答錯題');
   const rows = [cols];
   LIST.forEach(row=>{
-    const r = scoreRow(row.answers);
+    const r = scoreRow(row.answers, row.durationSec);
     const a = [row.timestamp, fmtDur(row.durationSec), row.name, row.email||'', r.verdict];
     TRAIT_ORDER.forEach(k=>{ const d=r.detail[k]; a.push(d.got+'/'+d.max+(d.pass?' 通過':' 未達標')); });
     const wrong = qDetailRow(row.answers).filter(d=>!d.ok).map(d=>'Q'+d.n).join('、');
