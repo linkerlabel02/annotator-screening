@@ -206,6 +206,13 @@ function qDetailRow(ans){
   });
 }
 
+/* 每題作答時間（從答案JSON夾帶的 __qtimes 讀取，依顯示順序排列） */
+function fmtQTimes(ans){
+  const tm = ans && ans.__qtimes;
+  if(!tm || typeof tm !== 'object' || !Object.keys(tm).length) return '<span style="color:var(--sub)">（無資料）</span>';
+  return QUESTIONS.map((q,i)=> 'Q'+(i+1)+':'+(tm[q.id]!=null ? tm[q.id]+'秒' : '—')).join('　');
+}
+
 function login(){
   if($('pw').value === ADMIN_PASSWORD){
     $('s-login').classList.add('hide');
@@ -233,10 +240,10 @@ function renderTable(){
   $('count').textContent = '（共 ' + LIST.length + ' 筆）';
   let head = '<tr><th>#</th><th>時間</th><th>測驗時長</th><th>姓名</th><th>Email</th><th>總判定</th><th>答題正確數</th>';
   TRAIT_ORDER.forEach(k=> head += '<th>'+t[k].label+'</th>');
-  head += '<th>答錯題（點看明細）</th></tr>';
+  head += '<th>答錯題（點看明細）</th><th>每題作答時間（秒）</th></tr>';
   let body = '';
   if(!LIST.length){
-    body = '<tr><td colspan="13" style="padding:24px;color:var(--sub)">尚無資料</td></tr>';
+    body = '<tr><td colspan="14" style="padding:24px;color:var(--sub)">尚無資料</td></tr>';
   }
   LIST.slice().reverse().forEach((row,i)=>{
     const realIdx = LIST.length-1-i;
@@ -257,6 +264,7 @@ function renderTable(){
     const wrong = allDetail.filter(d=>!d.ok);
     if(!wrong.length) body += '<td><span class="lnk allok">全對</span></td>';
     else body += '<td><button class="lnk" onclick="openDetail('+realIdx+')">'+wrong.map(d=>'Q'+d.n).join('、')+'</button></td>';
+    body += '<td style="font-size:12px;color:var(--sub);min-width:170px;text-align:left;line-height:1.8">'+fmtQTimes(row.answers)+'</td>';
     body += '</tr>';
   });
   $('tbl').innerHTML = head + body;

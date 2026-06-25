@@ -324,6 +324,8 @@ const QUESTIONS = [
    ================================================================= */
 const $ = id => document.getElementById(id);
 let guideIdx = 0, qIdx = 0, quizStartMs = 0, quizDurationSec = 0;
+let qShownMs = 0;          // 目前這題開始顯示的時間
+const qTimes = {};         // 每題作答秒數 {q1:12, q2:8, ...}
 const answers = {};   // {q1:'白天', ...}
 
 function show(id){
@@ -352,7 +354,7 @@ function guideNav(d){
 }
 
 /* ---- 測驗 ---- */
-function startQuiz(){ qIdx=0; quizStartMs=Date.now(); renderQ(); show('s-quiz'); }
+function startQuiz(){ qIdx=0; quizStartMs=Date.now(); Object.keys(qTimes).forEach(k=>delete qTimes[k]); renderQ(); show('s-quiz'); }
 function renderQ(){
   const q = QUESTIONS[qIdx];
   $('q-step').textContent = `第 ${qIdx+1} / ${QUESTIONS.length} 題`;
@@ -395,9 +397,12 @@ function renderQ(){
   }
   $('q-next').disabled = (answers[q.id]==null || answers[q.id]==='');
   $('q-next').textContent = qIdx===QUESTIONS.length-1 ? '送出 ✓' : '下一題 →';
+  qShownMs = Date.now();   // 開始計這題的作答時間
 }
 function nextQ(){
   if(answers[QUESTIONS[qIdx].id]==null || answers[QUESTIONS[qIdx].id]===''){ alert('請先作答'); return; }
+  const cid = QUESTIONS[qIdx].id;   // 累計這題花的秒數（按上一頁回來會累加）
+  qTimes[cid] = (qTimes[cid]||0) + Math.max(0, Math.round((Date.now()-qShownMs)/1000));
   if(qIdx===QUESTIONS.length-1){ finish(); return; }
   qIdx++; renderQ();
 }
@@ -642,7 +647,7 @@ function sendToGas(r){
     totalCount: QUESTIONS.length,
     durationSec: quizDurationSec,
     traits: r.detail,
-    answers: answers,
+    answers: Object.assign({}, answers, { __qtimes: qTimes }),  // 每題作答時間夾帶在答案JSON中（admin 頁讀取顯示）
   };
   fetch(CONFIG.gasUrl, { method:'POST', mode:'no-cors',
     headers:{'Content-Type':'text/plain;charset=utf-8'},
