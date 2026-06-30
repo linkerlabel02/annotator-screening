@@ -88,7 +88,7 @@ const GAS_URL = 'https://script.google.com/macros/s/AKfycbxgyzZN2swtTPfR1oE3Y0gR
 /* 管理員密碼以雜湊存放（原始碼看不到明文）；登入照常輸入密碼即可。
    要改密碼：跟 Claude 說新密碼，請它用 hashPw() 重算下面這個數字替換（index.html 也要一起改）。 */
 function hashPw(s){let h1=0xdeadbeef,h2=0x41c6ce57;for(let i=0,ch;i<s.length;i++){ch=s.charCodeAt(i);h1=Math.imul(h1^ch,2654435761);h2=Math.imul(h2^ch,1597334677);}h1=Math.imul(h1^(h1>>>16),2246822507);h1^=Math.imul(h2^(h2>>>13),3266489909);h2=Math.imul(h2^(h2>>>16),2246822507);h2^=Math.imul(h1^(h1>>>13),3266489909);return 4294967296*(2097151&h2)+(h1>>>0);}
-const ADMIN_PASSWORD_HASH = 5518423402539479;
+const ADMIN_PASSWORD_HASH = 7086380935391620;
 
 /* ====== 計分設定（與 index.html 一致；改門檻兩邊要一起改） ====== */
 const CONFIG = {
